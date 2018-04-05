@@ -79,10 +79,11 @@
                true
                (seq allowed-origins))
              (seq allowed-methods)
-             (if (fn? allowed-origins)   ;; if allowed-origins is a function,...
-               (allowed-origins request) ;; ... call it with request as param
-               (some #(re-matches % origin) allowed-origins)) ;;...or else it's a predefined collection,
-                                                              ;;do a normal existence check.
+             (if (fn? allowed-origins)
+               (allowed-origins request)
+               (some #(re-matches % origin) allowed-origins))
+             ;;...or else it's a predefined collection,
+             ;;do a normal existence check.
              (if (preflight? request)
                (allow-preflight-headers? request allowed-headers)
                true)
@@ -151,10 +152,10 @@
   (-> (apply hash-map access-control)
       (update-in [:access-control-allow-methods] set)
       (update-in [:access-control-allow-headers] #(if (coll? %) (set %) %))
-      (update-in [:access-control-allow-origin] #(cond
-                                                   (sequential? %) %
-                                                   (fn? %)         % ;;allow functions for dynamic origin checks
-                                                   :otherwise      [%]))))
+      (update-in [:access-control-allow-origin] #(if (or (sequential? %)
+                                                         (fn? %))
+                                                   %
+                                                   [%]))))
 
 (defn handle-cors [handler request access-control response-handler]
   (if (and (preflight? request) (allow-request? request access-control))
